@@ -1,0 +1,21 @@
+[package]
+name = "grpc-sys-learn"
+version = "0.1.0"
+authors = ["qupeng <qupeng@pingcap.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "grpc_sys_learn"
+path = "src/lib.rs"
+
+[dependencies]
+futrues = "0.1"
+
+[dependencies.grpcio-sys]
+path = "/home/qupeng/github.com/pingcap/grpc-rs/grpc-sys"
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
