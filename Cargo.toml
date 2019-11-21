@@ -11,7 +11,7 @@ name = "grpc_sys_learn"
 path = "src/lib.rs"
 
 [dependencies]
-futrues = "0.1"
+futures = "0.1"
 
 [dependencies.grpcio-sys]
 path = "/home/qupeng/github.com/pingcap/grpc-rs/grpc-sys"
