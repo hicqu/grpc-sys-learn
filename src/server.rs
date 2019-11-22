@@ -3,7 +3,7 @@ use std::{i64, mem, ptr, thread};
 
 use grpcio_sys::*;
 
-use grpc_sys_learn::*;
+use grpc_sys_learn::{server_context::*, *};
 
 struct ServerRuntime {
     server: *mut grpc_server,

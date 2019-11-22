@@ -19,3 +19,7 @@ path = "/home/qupeng/github.com/pingcap/grpc-rs/grpc-sys"
 [[bin]]
 name = "server"
 path = "src/server.rs"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
