@@ -1,9 +1,14 @@
+mod debug;
+
 use std::ffi::CString;
 use std::{i64, mem, ptr, thread};
 
-use grpcio_sys::*;
-
+use futures::{Future, Stream};
 use grpc_sys_learn::{server_context::*, *};
+use grpcio_sys::*;
+use tokio_threadpool::{Builder as ThreadPoolBuilder, ThreadPool};
+
+use debug::M;
 
 struct ServerRuntime {
     server: *mut grpc_server,
@@ -36,14 +41,15 @@ unsafe fn main_thread() {
     grpc_server_start(server);
 
     let runtime = ServerRuntime::new(server, cq_for_call);
+    let pool = ThreadPoolBuilder::new().name_prefix("pool").build();
     let th = thread::Builder::new()
         .name("dispatcher".to_owned())
-        .spawn(move || cq_dispatch_routine(runtime))
+        .spawn(move || cq_dispatch_routine(runtime, pool))
         .unwrap();
     th.join().unwrap();
 }
 
-unsafe fn cq_dispatch_routine(runtime: ServerRuntime) {
+unsafe fn cq_dispatch_routine(runtime: ServerRuntime, pool: ThreadPool) {
     let cq_bounded = grpc_completion_queue_create_for_next(ptr::null_mut());
     let h_runtime = ServerRuntime::new(ptr::null_mut(), cq_bounded);
     thread::Builder::new()
@@ -63,7 +69,13 @@ unsafe fn cq_dispatch_routine(runtime: ServerRuntime) {
         must_check_event_type(&ev);
         let ctx = ev.tag as *mut ServerContext;
         log_peer_and_method(ctx);
-        dispatch_server_context(ctx);
+        let (stream, sink) = dispatch::<M, M>(ctx);
+        pool.spawn(
+            stream
+                .forward(sink)
+                .map(|_| println!("forward stream to sink success"))
+                .map_err(|e| println!("forward stream to sink fail: {:?}", e)),
+        );
         request_call(server, cq_bounded, cq);
     }
 }
@@ -76,24 +88,7 @@ unsafe fn cq_handler(runtime: ServerRuntime) {
     loop {
         let ev = grpc_completion_queue_next(cq, deadline, ptr::null_mut());
         must_check_event_type(&ev);
-        let mut ctx = Box::from_raw(ev.tag as *mut ServerContext);
-        match ctx.phase() {
-            ServerPhase::SendingMetadata => ctx.on_metadata_sent(),
-            ServerPhase::RecvingClose => ctx.on_close_received(),
-            ServerPhase::SendingStatus => ctx.on_status_sent(),
-            ServerPhase::Pending => {
-                ctx.on_dispatched();
-                mem::forget(ctx);
-            }
-            ServerPhase::Recving => {
-                ctx.on_message_received();
-                mem::forget(ctx);
-            }
-            ServerPhase::Sending => {
-                ctx.on_message_sent();
-                mem::forget(ctx);
-            }
-        }
+        ServerContext::resolve_tag(ev.tag);
     }
 }
 

@@ -12,14 +12,18 @@ path = "src/lib.rs"
 
 [dependencies]
 futures = "0.1"
+protobuf = "2"
+tokio-threadpool = "0.1"
 
 [dependencies.grpcio-sys]
 path = "/home/qupeng/github.com/pingcap/grpc-rs/grpc-sys"
+[dependencies.grpcio]
+path = "/home/qupeng/github.com/pingcap/grpc-rs"
 
 [[bin]]
 name = "server"
 path = "src/server.rs"
-
-[[bin]]
-name = "client"
-path = "src/client.rs"
+# 
+# [[bin]]
+# name = "client"
+# path = "src/client.rs"
